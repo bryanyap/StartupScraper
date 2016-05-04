@@ -7,19 +7,18 @@ class TechInAsiaRecord:
         self.latest_funding = self.cleanAndEncode(input[4])
         self.funded_date = self.cleanAndEncode(input[5])
         self.desc = self.cleanAndEncode(input[6])
-        self.delimiter = '|'
-
-        # print self.name + delimiter + self.location + delimiter + self.industries + delimiter + self.stage + delimiter + self.latest_funding + delimiter + self.funded_date + delimiter + self.desc
+        self.url = self.cleanAndEncode(input[7])
+        self.delimiter = '\t'
 
     def cleanAndEncode(self, input):
         if input == None:
             return 'None'
         else:
+            input = input.replace('\n', ' ').replace('\r', '')
             return input.encode('utf-8')
 
     def getResults(self):
-        delimiter = self.delimiter
-        return self.name + delimiter + self.location + delimiter + self.industries + delimiter + self.stage + delimiter + self.latest_funding + delimiter + self.funded_date + delimiter + self.desc
+        return self.name + self.delimiter + self.location + self.delimiter + self.industries + self.delimiter + self.stage + self.delimiter + self.latest_funding + self.delimiter + self.funded_date + self.delimiter + self.desc + self.delimiter + self.url
 
 
 class LinkedInRecord:
