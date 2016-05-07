@@ -1,11 +1,13 @@
+import random
+import time
 from sys import argv
 
 import lxml.html as lh
 from progressbar import ProgressBar
 from selenium import webdriver
-from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 
 from record_types import TechInAsiaRecord
+from startupdetails import StartupDetailsScraper
 
 if len(argv) != 3:
     print 'Please key in the necessary inputs'
@@ -21,15 +23,16 @@ else:
     else:
         raise ValueError('Please key in the starting and ending pages in the right order')
 
-    binary = FirefoxBinary('C:/Program Files/Mozilla Firefox/firefox.exe')
-    driver = webdriver.Firefox(firefox_binary=binary)
+    driver = webdriver.Firefox()
+
     file = open('./techinasia_results.txt', 'w')
-    file.write('name\tlocation\tindustries\tstage\tlatest_funding\tfunded_date\tdesc\turl' + '\n')
+    file.write('name\tlocation\tindustries\tstage\tlatest_funding\tfunded_date\tdesc\turl\tjson' + '\n')
 
     bar = ProgressBar(max_value=(args[1] - args[0]) * 20)
     progress_counter = 0
     bar.update(progress_counter)
 
+    print 'Scraping'
     for i in range(args[0], args[1]):
         url = 'https://www.techinasia.com/startups?page=' + str(i) + '&sort=+'
 
@@ -38,44 +41,67 @@ else:
         doc = lh.document_fromstring(html)
         rows = doc.xpath('//*[@id="app"]/div/div/div[2]/div[2]/div/table/tbody/tr')
 
-        for row in rows:
-            progress_counter += 1
-            bar.update(progress_counter)
+        details_scrapers = []
+        records = []
 
-            result_list = []
-            details_text = ''
-            url_string = ''
+        for j in range(len(rows)):
+            row = rows[j]
+            record = TechInAsiaRecord()
+            records.append(record)
 
-            for i in range(6):
-                if i == 0:
-                    result_list.append(row[i][0].text)
-                    url_string = 'https://www.techinasia.com' + row[i][0].get('href')
+            for k in range(6):
+                if k == 0:
+                    record.set_name(row[k][0].text)
+                    startup_url = 'https://www.techinasia.com' + row[k][0].get('href')
+                    record.set_url(startup_url)
 
-                    driver.get(url_string)
-                    details_html = driver.page_source
-                    details_doc = lh.document_fromstring(details_html)
+                    startup_api_url = 'https://www.techinasia.com/api/2.0' + row[k][0].get('href')
+                    details_scraper = StartupDetailsScraper(startup_api_url)
+                    details_scrapers.append(details_scraper)
+
+                    time.sleep(random.random())
+                    details_scraper.start()
+                    details_scraper.join()
+
+                    progress_counter += 1
+                    bar.update(progress_counter)
+
+                elif k == 1:
                     try:
-                        details_text = details_doc.xpath('//*[@id="app"]/div/div/div[2]/div/text()')[0]
+                        record.set_location(row[k].text)
                     except:
-                        details_text = 'empty'
-
-                elif i == 2:
+                        pass
+                elif k == 2:
                     try:
-                        result_list.append(row[i][0][4][0].text)
+                        record.set_industries(row[k][0][4][0].text)
                     except:
-                        result_list.append('empty')
-                else:
+                        pass
+                elif k == 3:
                     try:
-                        result_list.append(row[i].text)
+                        record.set_stage(row[k].text)
                     except:
-                        result_list.append('empty')
+                        pass
+                elif k == 4:
+                    try:
+                        record.set_latest_funding(row[k].text)
+                    except:
+                        pass
+                elif k == 5:
+                    try:
+                        record.set_funded_date(row[k].text)
+                    except:
+                        pass
 
-            result_list.append(details_text)
-            result_list.append(url_string)
-            record = TechInAsiaRecord(result_list)
+        for j in range(len(details_scrapers)):
+            details_scrapers[j].join()
 
-            file.write(record.getResults() + '\n')
+            records[j].set_desc(details_scrapers[j].get_pitch())
+            records[j].set_json(details_scrapers[j].get_json())
+
+            file.write(records[j].get_results() + '\n')
 
     driver.quit()
     file.close()
     bar.finish()
+
+    print 'Done'
