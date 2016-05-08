@@ -31,7 +31,7 @@ class TechInAsiaRecord:
         self.industries = self.clean_input(industries)
 
     def set_stage(self, stage):
-        self.industries = self.clean_input(stage)
+        self.stage = self.clean_input(stage)
 
     def set_latest_funding(self, latest_funding):
         self.latest_funding = self.clean_input(latest_funding)
